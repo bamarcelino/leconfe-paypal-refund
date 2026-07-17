@@ -54,4 +54,7 @@ Because this is a shadowed copy of a core template, re-sync it if a future Lecon
 
 ## Author
 
-Bruno Cesar Alves Marcelino — Scientia International (<bruno.marcelino@scientia.international>)
+**Bruno Cesar Alves Marcelino**  
+Author and Developer
+
+Developed under **Scientia International**.
