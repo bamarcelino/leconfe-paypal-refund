@@ -27,10 +27,6 @@ final class PaypalRefundPlugin extends Plugin
             return;
         }
 
-        if (! PluginFacade::getPlugin('PaypalPayment')) {
-            return;
-        }
-
         Hook::add('PaymentManager::getPaymentMethodInfolist', function ($hookName, &$schemas) {
             $schemas[] = $this->refundStatusSection();
             $schemas[] = $this->refundActionSection();
@@ -41,10 +37,11 @@ final class PaypalRefundPlugin extends Plugin
 
     private function canRefund(Payment $record): bool
     {
-        return $record->payment_method === 'paypal'
+        return strtolower((string) $record->payment_method) === 'paypal'
             && $record->paid_at !== null
             && filled($record->getMeta('paypal_payment_id'))
             && blank($record->getMeta('paypal_refund_id'))
+            && PluginFacade::getPlugin('PaypalPayment') !== null
             && auth()->user()?->can('update', app()->getCurrentScheduledConference());
     }
 
