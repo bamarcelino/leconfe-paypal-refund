@@ -2,7 +2,7 @@
 
 Adds a **Refund via PayPal** action to the Payment Detail page of the scheduled-conference panel, for payments completed through the official **PaypalPayment** plugin.
 
-Tested against Leconfe 1.4.6 and PaypalPayment 1.1.0.
+Tested against Leconfe 1.4.6 and PaypalPayment 1.1.0. Licensed under GPL-3.0, matching the Leconfe ecosystem.
 
 ## What it does
 
@@ -35,3 +35,23 @@ This is the same API generation used by the official plugin's checkout flow (Omn
 - Leconfe's core has no "refunded" payment state (states are only paid/unpaid), so the refund is represented via metas plus, optionally, reverting the payment to unpaid. Certificates, registration status side effects and participant notifications are intentionally not touched — handle those according to your workflow.
 - Refunds issued directly on paypal.com are not detected (there is no webhook); this plugin only tracks refunds it issued itself.
 - A partial refund can be issued only once per payment through this plugin (the idempotency guard blocks a second attempt, to keep bookkeeping unambiguous). Issue any remaining amount directly on paypal.com if ever needed.
+
+## Receipt override
+
+Since Leconfe's receipt template has no extension hook, the plugin prepends its own view location so a shadowed copy of `receipt.blade.php` takes precedence (core files are never modified). Refunded payments render a notice under the receipt header:
+
+- **Full refund** — red "REFUNDED" block; the receipt is marked as no longer valid as proof of payment.
+- **Partial refund** — amber "PARTIAL REFUND" block; the receipt remains valid for the remaining amount, which is shown explicitly.
+
+Because this is a shadowed copy of a core template, re-sync it if a future Leconfe release changes the receipt layout.
+
+## Changelog
+
+- **1.1.1** — Partial refunds no longer invalidate the receipt; amber notice with remaining valid amount; refund type badge and remaining amount in the panel status section.
+- **1.1.0** — Receipt override showing a refund notice.
+- **1.0.1** — Moved the PaypalPayment presence check out of boot (plugin registration order race); case-insensitive payment method check.
+- **1.0.0** — Initial release: full/partial refund action on the Payment Detail page via the PayPal REST v1 API, reusing the official plugin's credentials; refund metadata, idempotency guard, optional payment reopening, audit logging.
+
+## Author
+
+Bruno Cesar Alves Marcelino — Scientia International (<bruno.marcelino@scientia.international>)

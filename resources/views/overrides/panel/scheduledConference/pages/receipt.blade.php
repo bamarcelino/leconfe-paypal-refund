@@ -70,10 +70,17 @@
              <p>Registration Date: {{ $record->created_at->format('jS M Y, h:i:sa') }} </p>
         </div>
         @if(filled($record->getMeta('paypal_refund_id')))
+        @php
+            $paypalRefundedAmount = round((float) $record->getMeta('paypal_refund_amount'), 2);
+            $paypalPaidAmount = round((float) $record->amount, 2);
+            $paypalIsFullRefund = $paypalRefundedAmount >= $paypalPaidAmount;
+            $paypalRemainingAmount = max($paypalPaidAmount - $paypalRefundedAmount, 0);
+        @endphp
+        @if($paypalIsFullRefund)
         <div class="mt-4 p-3" style="border: 2px solid #b91c1c; background: #fef2f2; color: #b91c1c;">
             <p class="text-xl font-bold" style="letter-spacing: 1px;">REFUNDED</p>
             <p class="text-base" style="color: #7f1d1d;">
-                This payment was refunded via PayPal on {{ $record->getMeta('paypal_refunded_at') }}.
+                This payment was refunded in full via PayPal on {{ $record->getMeta('paypal_refunded_at') }}.
             </p>
             <p style="color: #7f1d1d;">
                 Refund ID: {{ $record->getMeta('paypal_refund_id') }}
@@ -81,6 +88,22 @@
             </p>
             <p style="color: #7f1d1d;">This receipt is no longer valid as proof of payment.</p>
         </div>
+        @else
+        <div class="mt-4 p-3" style="border: 2px solid #b45309; background: #fffbeb; color: #b45309;">
+            <p class="text-xl font-bold" style="letter-spacing: 1px;">PARTIAL REFUND</p>
+            <p class="text-base" style="color: #78350f;">
+                A partial refund of {{ $record->getMeta('paypal_refund_amount') }} {{ $record->getMeta('paypal_refund_currency') }}
+                was issued via PayPal on {{ $record->getMeta('paypal_refunded_at') }}.
+            </p>
+            <p style="color: #78350f;">
+                Refund ID: {{ $record->getMeta('paypal_refund_id') }}
+            </p>
+            <p style="color: #78350f;">
+                This receipt remains valid as proof of payment for the remaining amount of
+                {{ money($paypalRemainingAmount, $record->currency, true)->formatWithoutZeroes() }}.
+            </p>
+        </div>
+        @endif
         @endif
         <div class="mt-8 text-base">
             <p>Dear {{ $user_fullname }},</p>

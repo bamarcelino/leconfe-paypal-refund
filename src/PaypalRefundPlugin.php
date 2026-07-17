@@ -60,12 +60,25 @@ final class PaypalRefundPlugin extends Plugin
         return Section::make('PayPal Refund')
             ->visible(fn ($record) => $record instanceof Payment && $this->isRefunded($record))
             ->schema([
+                TextEntry::make('paypal_refund_type')
+                    ->label('Refund Type')
+                    ->badge()
+                    ->color(fn ($record) => $this->isFullRefund($record) ? 'danger' : 'warning')
+                    ->getStateUsing(fn ($record) => $this->isFullRefund($record) ? 'Full refund' : 'Partial refund'),
                 TextEntry::make('paypal_refund_id')
                     ->label('Refund ID')
                     ->getStateUsing(fn ($record) => $record->getMeta('paypal_refund_id')),
                 TextEntry::make('paypal_refund_amount')
                     ->label('Refunded Amount')
                     ->getStateUsing(fn ($record) => trim($record->getMeta('paypal_refund_amount').' '.$record->getMeta('paypal_refund_currency'))),
+                TextEntry::make('paypal_refund_remaining')
+                    ->label('Remaining Paid Amount')
+                    ->visible(fn ($record) => ! $this->isFullRefund($record))
+                    ->getStateUsing(function ($record) {
+                        $remaining = max(round((float) $record->amount, 2) - round((float) $record->getMeta('paypal_refund_amount'), 2), 0);
+
+                        return money($remaining, $record->currency, true)->formatWithoutZeroes();
+                    }),
                 TextEntry::make('paypal_refunded_at')
                     ->label('Refunded At')
                     ->getStateUsing(fn ($record) => $record->getMeta('paypal_refunded_at')),
@@ -75,6 +88,11 @@ final class PaypalRefundPlugin extends Plugin
                     ->color(fn ($record) => $record->getMeta('paypal_refund_state') === 'completed' ? 'success' : 'warning')
                     ->getStateUsing(fn ($record) => $record->getMeta('paypal_refund_state')),
             ]);
+    }
+
+    private function isFullRefund(Payment $record): bool
+    {
+        return round((float) $record->getMeta('paypal_refund_amount'), 2) >= round((float) $record->amount, 2);
     }
 
     private function refundActionSection(): Section
