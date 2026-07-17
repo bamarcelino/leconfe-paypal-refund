@@ -1,0 +1,5 @@
+name: "Paypal Refund"
+folder: PaypalRefund
+author: "Scientia International"
+description: "Adds a refund action for PayPal payments on the Payment Detail page, using the credentials already configured in the official PaypalPayment plugin."
+version: "1.0.0"
