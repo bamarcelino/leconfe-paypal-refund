@@ -27,6 +27,11 @@ final class PaypalRefundPlugin extends Plugin
             return;
         }
 
+        // Shadow the core receipt template so refunded payments render a
+        // prominent refund notice. prependLocation makes our copy win over
+        // resources/views without touching the core files.
+        app('view')->getFinder()->prependLocation($this->getPluginPath('resources/views/overrides'));
+
         Hook::add('PaymentManager::getPaymentMethodInfolist', function ($hookName, &$schemas) {
             $schemas[] = $this->refundStatusSection();
             $schemas[] = $this->refundActionSection();
