@@ -1,0 +1,22 @@
+{
+    "name": "scientia-international/leconfe-paypal-refund",
+    "description": "PayPal refund support for Leconfe payments.",
+    "license": "GPL-3.0-or-later",
+    "autoload": {
+        "psr-4": {
+            "PaypalRefund\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Bruno Cesar Alves Marcelino",
+            "homepage": "https://scientia.international"
+        }
+    ],
+    "require": {
+        "php": "^8.1"
+    },
+    "scripts": {
+        "test": "@php tests/run.php"
+    }
+}

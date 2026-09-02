@@ -46,8 +46,17 @@ final class PaypalRefundPlugin extends Plugin
             && $record->paid_at !== null
             && filled($record->getMeta('paypal_payment_id'))
             && blank($record->getMeta('paypal_refund_id'))
-            && PluginFacade::getPlugin('PaypalPayment') !== null
-            && auth()->user()?->can('update', app()->getCurrentScheduledConference());
+            && $this->paypalIsAvailable()
+            && auth()->user()?->can('update', $record) === true;
+    }
+
+    private function paypalIsAvailable(): bool
+    {
+        $paypalPlugin = PluginFacade::getPlugin('PaypalPayment', true);
+
+        return $paypalPlugin !== null
+            && method_exists($paypalPlugin, 'isProperlySetup')
+            && $paypalPlugin->isProperlySetup();
     }
 
     private function isRefunded(Payment $record): bool
@@ -175,7 +184,7 @@ final class PaypalRefundPlugin extends Plugin
 
                                 Notification::make()
                                     ->title('Refund issued successfully')
-                                    ->body("PayPal refund {$result['refund_id']} ({$result['amount']} {$result['currency']}) — state: {$result['state']}.")
+                                    ->body("PayPal refund {$result['refund_id']} ({$result['amount']} {$result['currency']}) - state: {$result['state']}.")
                                     ->success()
                                     ->send();
                             } catch (\Throwable $e) {
