@@ -1,0 +1,60 @@
+name: Leconfe compatibility tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'compat/**'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Leconfe ${{ matrix.leconfe-ref }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        leconfe-ref:
+          - 1.5.0
+          - 1.5.x
+
+    steps:
+      - name: Checkout PaypalRefund
+        uses: actions/checkout@v7
+        with:
+          path: PaypalRefund
+
+      - name: Checkout Leconfe
+        uses: actions/checkout@v7
+        with:
+          repository: leconfe/leconfe
+          ref: ${{ matrix.leconfe-ref }}
+          path: leconfe
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, json, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Leconfe dependencies
+        working-directory: leconfe
+        run: composer install --no-ansi --no-interaction --no-progress --prefer-dist
+
+      - name: Install plugin in the Leconfe tree
+        run: ln -s "$GITHUB_WORKSPACE/PaypalRefund" "$GITHUB_WORKSPACE/leconfe/plugins/PaypalRefund"
+
+      - name: Lint plugin PHP files
+        working-directory: PaypalRefund
+        run: find . -path './.git' -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Run plugin test suite
+        working-directory: leconfe/plugins/PaypalRefund
+        env:
+          LECONFE_APP_PATH: ${{ github.workspace }}/leconfe
+        run: composer test

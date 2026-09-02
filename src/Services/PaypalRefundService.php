@@ -24,21 +24,24 @@ final class PaypalRefundService
 
     private string $clientSecret;
 
-    public function __construct()
+    public function __construct(?object $paypalPlugin = null)
     {
-        $paypalPlugin = Plugin::getPlugin('PaypalPayment');
+        $paypalPlugin ??= Plugin::getPlugin('PaypalPayment', true);
 
         if (! $paypalPlugin) {
-            throw new RuntimeException('The official PaypalPayment plugin is not installed.');
+            throw new RuntimeException('The official PaypalPayment plugin is not installed or enabled.');
         }
 
-        $clientId = $paypalPlugin->isTestMode()
-            ? $paypalPlugin->getSetting('client_id_test')
-            : $paypalPlugin->getSetting('client_id');
+        if (
+            ! method_exists($paypalPlugin, 'isTestMode')
+            || ! method_exists($paypalPlugin, 'getClientId')
+            || ! method_exists($paypalPlugin, 'getClientSecret')
+        ) {
+            throw new RuntimeException('The installed PaypalPayment plugin is not compatible with PaypalRefund.');
+        }
 
-        $clientSecret = $paypalPlugin->isTestMode()
-            ? $paypalPlugin->getSetting('client_secret_test')
-            : $paypalPlugin->getSetting('client_secret');
+        $clientId = $paypalPlugin->getClientId();
+        $clientSecret = $paypalPlugin->getClientSecret();
 
         if (! $clientId || ! $clientSecret) {
             throw new RuntimeException('PayPal credentials are not configured in the PaypalPayment plugin.');
@@ -63,6 +66,16 @@ final class PaypalRefundService
      */
     public function refundPayment(string $paymentId, ?float $amount, string $currency): array
     {
+        if ($amount !== null && (! is_finite($amount) || $amount <= 0)) {
+            throw new RuntimeException('The refund amount must be greater than zero.');
+        }
+
+        $currency = Str::upper(trim($currency));
+
+        if (! preg_match('/^[A-Z]{3}$/', $currency)) {
+            throw new RuntimeException('The payment currency must be a three-letter ISO code.');
+        }
+
         $token = $this->accessToken();
 
         $saleId = $this->findSaleId($token, $paymentId);
@@ -72,7 +85,7 @@ final class PaypalRefundService
         if ($amount !== null) {
             $body['amount'] = [
                 'total' => number_format($amount, 2, '.', ''),
-                'currency' => Str::upper($currency),
+                'currency' => $currency,
             ];
         }
 
@@ -95,7 +108,7 @@ final class PaypalRefundService
             'refund_id' => (string) $data['id'],
             'state' => (string) $data['state'],
             'amount' => (string) ($data['amount']['total'] ?? ($amount !== null ? number_format($amount, 2, '.', '') : '')),
-            'currency' => (string) ($data['amount']['currency'] ?? Str::upper($currency)),
+            'currency' => (string) ($data['amount']['currency'] ?? $currency),
             'sale_id' => $saleId,
         ];
     }

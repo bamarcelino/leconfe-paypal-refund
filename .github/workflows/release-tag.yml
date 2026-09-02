@@ -5,17 +5,26 @@ on:
     tags:
       - '*.*.*'
 
+permissions:
+  contents: write
+
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Prepare repository in a single folder with plugin name
       run: |
         mkdir -p ./release/PaypalRefund
-        rsync -av ./ ./release/PaypalRefund --exclude release --exclude .git --exclude .github
+        rsync -av ./ ./release/PaypalRefund \
+          --exclude release \
+          --exclude .git \
+          --exclude .github \
+          --exclude .phpunit.result.cache \
+          --exclude tests \
+          --exclude phpunit.xml
 
     - name: Create zip archive
       run: |
@@ -24,7 +33,7 @@ jobs:
         ls -l plugin.zip
 
     - name: Create Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       if: startsWith(github.ref, 'refs/tags/')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -34,4 +43,5 @@ jobs:
         draft: true
         prerelease: false
         generate_release_notes: true
+        fail_on_unmatched_files: true
         files: ./release/plugin.zip

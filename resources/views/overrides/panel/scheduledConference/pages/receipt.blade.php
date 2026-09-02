@@ -63,12 +63,13 @@
         @endif
         <div class="text-right">
             <p class="text-base font-bold">{{ $scheduledConference->title }}</p>
-            {!! $scheduledConference->getMeta('invoice_sender_information') !!}
+            {!! $scheduledConference->getMeta('receipt_sender_information') ?: $scheduledConference->getMeta('invoice_sender_information') !!}
         </div>
         <div class="bg-gray-200 p-2 mt-4">
             <p class="text-xl font-bold">Receipt No: {{ $record->receipt }}</p>
              <p>Registration Date: {{ $record->created_at->format('jS M Y, h:i:sa') }} </p>
         </div>
+        {{-- PaypalRefund: refund notice start --}}
         @if(filled($record->getMeta('paypal_refund_id')))
         @php
             $paypalRefundedAmount = round((float) $record->getMeta('paypal_refund_amount'), 2);
@@ -105,11 +106,15 @@
         </div>
         @endif
         @endif
+        {{-- PaypalRefund: refund notice end --}}
         <div class="mt-8 text-base">
             <p>Dear {{ $user_fullname }},</p>
             <p>
                 We have successfully received your registration fee of {{ $record->getFormattedFee() }}.
             </p>
+            @if($submissionTitle)
+            <p>Submission Title: <b>{{ $submissionTitle }}</b></p>
+            @endif
             @if(count($additionalItems))
             <p class="mt-2">Payment breakdown:</p>
             <ul class="list-disc ml-6">
@@ -127,10 +132,12 @@
             @endif
             <p>Thank you for your payment. We look forward to your participation and wish you a successful and enjoyable conference experience.</p>
         </div>
-        <div class="mt-8 font-bold">
-            <p>With best regards,</p>
-            <p>{{ $scheduledConference->getMeta('organizer') }}</p>
+        @php($receiptNotes = $scheduledConference->getMeta('receipt_notes'))
+        @if($receiptNotes)
+        <div class="mt-4 max-w-none prose prose-sm prose-p:my-0 prose-p:leading-5 prose-li:leading-5 prose-ol:mt-0" style="--tw-prose-body: #000;--tw-prose-counters: #000;">
+            {!! $receiptNotes !!}
         </div>
+        @endif
     </div>
 </body>
 
